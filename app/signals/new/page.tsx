@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send, Landmark } from "lucide-react";
+import { ArrowLeft, Send, Plus, Trash2, Eye, Zap, Landmark, Link2 } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { SignalType, SignalStrength } from "@/lib/types";
+import { SignalType, SignalStrength, Source } from "@/lib/types";
 import TagBadge from "@/components/TagBadge";
 
 const TYPES: { value: SignalType; label: string }[] = [
@@ -16,44 +16,62 @@ const TYPES: { value: SignalType; label: string }[] = [
 ];
 
 const STRENGTHS: { value: SignalStrength; label: string; desc: string }[] = [
-  { value: "weak",   label: "Débil",   desc: "Emergente, pocas evidencias" },
-  { value: "medium", label: "Media",   desc: "Confirmada en varios contextos" },
-  { value: "strong", label: "Fuerte",  desc: "Ampliamente documentada" },
+  { value: "weak",   label: "Débil",  desc: "Emergente, pocas evidencias" },
+  { value: "medium", label: "Media",  desc: "Confirmada en varios contextos" },
+  { value: "strong", label: "Fuerte", desc: "Ampliamente documentada" },
 ];
+
+function FieldBlock({ icon, label, color, children }: {
+  icon: React.ReactNode; label: string; color: string; children: React.ReactNode;
+}) {
+  return (
+    <div className={`rounded-xl border p-4 ${color}`}>
+      <div className="flex items-center gap-2 mb-2">
+        {icon}
+        <span className="text-xs font-bold uppercase tracking-wider opacity-60">{label}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export default function NewSignalPage() {
   const { state, dispatch } = useStore();
   const router = useRouter();
 
-  const [title, setTitle]         = useState("");
-  const [description, setDesc]    = useState("");
-  const [url, setUrl]             = useState("");
-  const [source, setSource]       = useState("");
-  const [type, setType]           = useState<SignalType>("foresight");
-  const [strength, setStrength]   = useState<SignalStrength>("medium");
-  const [selectedTags, setTags]   = useState<string[]>([]);
-  const [bankRelevance, setBank]  = useState("");
-  const [authorName, setAuthor]   = useState("");
+  const [title, setTitle]           = useState("");
+  const [sources, setSources]       = useState<Source[]>([{ label: "", url: "" }]);
+  const [observation, setObs]       = useState("");
+  const [whySignal, setWhy]         = useState("");
+  const [implication, setImpl]      = useState("");
+  const [type, setType]             = useState<SignalType>("foresight");
+  const [strength, setStrength]     = useState<SignalStrength>("medium");
+  const [selectedTags, setTags]     = useState<string[]>([]);
+  const [authorName, setAuthor]     = useState("");
+
+  const addSource = () => setSources((s) => [...s, { label: "", url: "" }]);
+  const removeSource = (i: number) => setSources((s) => s.filter((_, idx) => idx !== i));
+  const updateSource = (i: number, field: keyof Source, val: string) =>
+    setSources((s) => s.map((src, idx) => idx === i ? { ...src, [field]: val } : src));
 
   const toggleTag = (id: string) =>
-    setTags((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
+    setTags((prev) => prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]);
 
-  const canSubmit = title.trim() && description.trim() && authorName.trim();
+  const canSubmit = title.trim() && observation.trim() && whySignal.trim() && implication.trim() && authorName.trim() && sources[0].label.trim();
 
   const submit = () => {
     if (!canSubmit) return;
-    const tags = state.tags.filter((t) => selectedTags.includes(t.id));
     dispatch({
       type: "ADD_SIGNAL",
       signal: {
         title: title.trim(),
-        description: description.trim(),
-        url: url.trim() || undefined,
-        source: source.trim() || undefined,
+        sources: sources.filter((s) => s.label.trim()).map((s) => ({ label: s.label.trim(), url: s.url?.trim() || undefined })),
+        observation: observation.trim(),
+        whySignal: whySignal.trim(),
+        implication: implication.trim(),
         type,
         strength,
-        tags,
-        bankRelevance: bankRelevance.trim() || undefined,
+        tags: state.tags.filter((t) => selectedTags.includes(t.id)),
         authorName: authorName.trim(),
         authorInitials: authorName.trim().split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
       },
@@ -63,39 +81,20 @@ export default function NewSignalPage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-6 transition-colors"
-      >
-        <ArrowLeft size={14} />
-        Volver al feed
+      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-6 transition-colors">
+        <ArrowLeft size={14} /> Volver al feed
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Nueva señal</h1>
-      <p className="text-sm text-gray-400 mb-8">Comparte una señal con el equipo de foresight.</p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">Nueva señal</h1>
+      <p className="text-sm text-gray-400 mb-8">Documenta una señal de cambio para el equipo.</p>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         {/* Title */}
         <div>
-          <label className="label">Título *</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Describe la señal en una frase clara"
-            className="input"
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="label">Descripción *</label>
-          <textarea
-            rows={4}
-            value={description}
-            onChange={(e) => setDesc(e.target.value)}
-            placeholder="¿Qué observas? ¿Por qué es relevante para el futuro?"
-            className="input resize-none"
-          />
+          <label className="label">Nombre de la señal *</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder='Ej: "Pagos biométricos por proximidad en escuelas públicas"'
+            className="input" />
         </div>
 
         {/* Type + Strength */}
@@ -114,68 +113,72 @@ export default function NewSignalPage() {
           </div>
         </div>
 
-        {/* Source */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="label">Fuente</label>
-            <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="MIT TR, Reuters…" className="input" />
+        {/* Sources */}
+        <FieldBlock icon={<Link2 size={14} className="text-gray-500" />} label="Fuente / Evidencia *" color="border-gray-200 bg-gray-50">
+          <div className="space-y-2">
+            {sources.map((s, i) => (
+              <div key={i} className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <input value={s.label} onChange={(e) => updateSource(i, "label", e.target.value)}
+                    placeholder="Nombre de la fuente (ej: Nature Medicine, 2026)"
+                    className="input text-xs py-1.5" />
+                  <input value={s.url || ""} onChange={(e) => updateSource(i, "url", e.target.value)}
+                    placeholder="URL (opcional)"
+                    className="input text-xs py-1.5" />
+                </div>
+                {sources.length > 1 && (
+                  <button onClick={() => removeSource(i)} className="self-start mt-1 p-1.5 text-red-400 hover:text-red-600">
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button onClick={addSource} className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 mt-1">
+              <Plus size={13} /> Añadir otra fuente
+            </button>
           </div>
-          <div>
-            <label className="label">URL</label>
-            <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className="input" />
-          </div>
-        </div>
+        </FieldBlock>
+
+        {/* Observation */}
+        <FieldBlock icon={<Eye size={14} className="text-blue-500" />} label="Observación *" color="border-blue-100 bg-blue-50">
+          <textarea rows={3} value={observation} onChange={(e) => setObs(e.target.value)}
+            placeholder="¿Qué está ocurriendo? Descripción concreta del hecho observado."
+            className="w-full px-3 py-2 rounded-lg text-sm border border-blue-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400/40 resize-none" />
+        </FieldBlock>
+
+        {/* Why signal */}
+        <FieldBlock icon={<Zap size={14} className="text-violet-500" />} label="¿Por qué es una señal? *" color="border-violet-100 bg-violet-50">
+          <textarea rows={3} value={whySignal} onChange={(e) => setWhy(e.target.value)}
+            placeholder="¿Qué tiene de futuro o de ruptura con el presente?"
+            className="w-full px-3 py-2 rounded-lg text-sm border border-violet-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-400/40 resize-none" />
+        </FieldBlock>
+
+        {/* Implication */}
+        <FieldBlock icon={<Landmark size={14} className="text-amber-600" />} label="Implicación para el banco *" color="border-amber-200 bg-amber-50">
+          <textarea rows={3} value={implication} onChange={(e) => setImpl(e.target.value)}
+            placeholder='"Si esto se vuelve masivo, entonces el banco deberá…"'
+            className="w-full px-3 py-2 rounded-lg text-sm border border-amber-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400/40 resize-none" />
+        </FieldBlock>
 
         {/* Tags */}
         <div>
           <label className="label">Etiquetas</label>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 mt-1">
             {state.tags.map((tag) => (
-              <TagBadge
-                key={tag.id}
-                tag={tag}
-                small
-                active={selectedTags.includes(tag.id)}
-                onClick={() => toggleTag(tag.id)}
-              />
+              <TagBadge key={tag.id} tag={tag} small active={selectedTags.includes(tag.id)} onClick={() => toggleTag(tag.id)} />
             ))}
           </div>
-        </div>
-
-        {/* Bank relevance */}
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <label className="flex items-center gap-2 text-sm font-semibold text-amber-800 mb-2">
-            <Landmark size={14} className="text-amber-600" />
-            ¿Por qué es importante para el banco?
-          </label>
-          <textarea
-            rows={3}
-            value={bankRelevance}
-            onChange={(e) => setBank(e.target.value)}
-            placeholder="¿Qué implicaciones tiene esta señal para el negocio, los clientes o la estrategia del banco?"
-            className="w-full px-3 py-2 rounded-lg text-sm border border-amber-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400/40 resize-none"
-          />
         </div>
 
         {/* Author */}
         <div>
           <label className="label">Tu nombre *</label>
-          <input
-            value={authorName}
-            onChange={(e) => setAuthor(e.target.value)}
-            placeholder="Nombre Apellido"
-            className="input"
-          />
+          <input value={authorName} onChange={(e) => setAuthor(e.target.value)} placeholder="Nombre Apellido" className="input" />
         </div>
 
-        {/* Submit */}
-        <button
-          onClick={submit}
-          disabled={!canSubmit}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-radar-500 hover:bg-radar-600 text-white font-semibold text-sm disabled:opacity-40 transition-colors shadow-md shadow-radar-500/20"
-        >
-          <Send size={15} />
-          Publicar señal
+        <button onClick={submit} disabled={!canSubmit}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm disabled:opacity-40 transition-colors shadow-md">
+          <Send size={15} /> Publicar señal
         </button>
       </div>
     </div>

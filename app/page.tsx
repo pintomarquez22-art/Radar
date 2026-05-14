@@ -23,7 +23,7 @@ export default function FeedPage() {
     return signals.filter((s) => {
       const matchType = activeType === "all" || s.type === (activeType as SignalType);
       const matchTag  = activeTag === "all" || s.tags.some((t) => t.id === activeTag);
-      const matchQ    = !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase()) || s.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchQ    = !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase()) || s.observation.toLowerCase().includes(searchQuery.toLowerCase());
       return matchType && matchTag && matchQ;
     });
   }, [signals, activeType, activeTag, searchQuery]);
