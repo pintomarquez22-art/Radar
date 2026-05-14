@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Infraestructura 2026 · Radar de Señales</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --radar:   #0ea5e9;
+    --radar-d: #0284c7;
+    --amber:   #f59e0b;
+    --red:     #ef4444;
+    --slate:   #64748b;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #060912;
+    color: white;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  #app { display: flex; flex-direction: column; height: 100vh; }
+  #slide-area { flex: 1; position: relative; overflow: hidden; }
+  #slide { position: absolute; inset: 0; display: flex; }
+
+  /* ── Animations ── */
+  @keyframes radar-spin  { to { transform: rotate(360deg); } }
+  @keyframes blink       { 0%,100%{opacity:.15} 50%{opacity:.6} }
+  @keyframes fade-in     { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slide-right { from{opacity:0;transform:translateX(28px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes slide-left  { from{opacity:0;transform:translateX(-28px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes count-up    { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse-ring  { 0%,100%{opacity:.5} 50%{opacity:1} }
+
+  .anim-right { animation: slide-right .35s cubic-bezier(.16,1,.3,1) both; }
+  .anim-left  { animation: slide-left  .35s cubic-bezier(.16,1,.3,1) both; }
+  .anim-in    { animation: fade-in     .35s cubic-bezier(.16,1,.3,1) both; }
+
+  /* ── Cover ── */
+  #cover {
+    width: 100%; height: 100%;
+    display: flex; align-items: center;
+    padding: 0 8%;
+    background: #060912;
+    background-image: radial-gradient(ellipse at 65% 50%, rgba(14,165,233,.07) 0%, transparent 60%);
+    position: relative; overflow: hidden;
+  }
+  .dot-grid {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(circle, rgba(255,255,255,.055) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  #radar-wrap {
+    position: absolute; right: -60px; top: 50%; transform: translateY(-50%);
+    width: 560px; height: 560px; opacity: .11; pointer-events: none;
+  }
+  #radar-sweep { transform-origin: 200px 200px; animation: radar-spin 5s linear infinite; }
+  .blip { animation: blink 2.5s ease-in-out infinite; }
+
+  .cover-content { position: relative; z-index: 2; max-width: 660px; }
+  .cover-chips { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 14px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; border: 1px solid;
+  }
+  .chip-blue  { background: rgba(14,165,233,.15); border-color: rgba(14,165,233,.3); color: #7dd3fc; }
+  .chip-green { background: rgba(34,197,94,.15);  border-color: rgba(34,197,94,.3);  color: #86efac; }
+
+  .cover-title {
+    font-size: clamp(3rem, 8vw, 5.5rem); font-weight: 900;
+    line-height: 1; letter-spacing: -.03em;
+    background: linear-gradient(100deg, #fff 30%, #bae6fd 65%, #0ea5e9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cover-year {
+    font-size: 3rem; font-weight: 900; color: var(--radar);
+    display: flex; align-items: center; gap: 16px; margin-top: 4px; margin-bottom: 16px;
+  }
+  .cover-year span { font-size: .875rem; font-weight: 500; color: rgba(255,255,255,.25); letter-spacing: .1em; }
+  .cover-desc {
+    font-size: .9375rem; color: rgba(255,255,255,.45); line-height: 1.65;
+    max-width: 480px; margin-bottom: 36px;
+  }
+
+  /* Stats */
+  .stats { display: flex; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; }
+  .stat-card {
+    padding: 16px 22px; border-radius: 16px;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    display: flex; flex-direction: column; align-items: center; min-width: 90px;
+    animation: count-up .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  .stat-card:nth-child(1){animation-delay:0ms}
+  .stat-card:nth-child(2){animation-delay:80ms}
+  .stat-card:nth-child(3){animation-delay:160ms}
+  .stat-card:nth-child(4){animation-delay:240ms}
+  .stat-num { font-size: 2.25rem; font-weight: 900; color: white; line-height: 1; }
+  .stat-lbl { font-size: 10px; color: rgba(255,255,255,.35); margin-top: 4px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+
+  /* CTA */
+  .cover-actions { display: flex; align-items: center; gap: 16px; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 28px; border-radius: 14px; border: none; cursor: pointer;
+    background: var(--radar); color: white; font-size: .875rem; font-weight: 700;
+    font-family: inherit; letter-spacing: .01em;
+    box-shadow: 0 8px 24px rgba(14,165,233,.3);
+    transition: background .15s, transform .15s, box-shadow .15s;
+  }
+  .btn-primary:hover { background: #38bdf8; transform: translateY(-1px) scale(1.02); box-shadow: 0 12px 32px rgba(14,165,233,.4); }
+  .btn-primary:active { transform: scale(.98); }
+  .hint { font-size: .75rem; color: rgba(255,255,255,.2); font-weight: 500; }
+
+  /* ── Signal Slide ── */
+  .sig-left {
+    width: 42%; flex-shrink: 0; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .sig-bg-img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; mix-blend-mode: luminosity; opacity: .28;
+  }
+  .sig-bg-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,.5) 0%, transparent 50%, rgba(0,0,0,.7) 100%);
+  }
+  .sig-dots-bg {
+    position: absolute; inset: 0; pointer-events: none; opacity: .04;
+    background-image: radial-gradient(circle, white 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .sig-glow { position: absolute; inset: 0; background: rgba(14,165,233,.04); mix-blend-mode: screen; }
+  .sig-num {
+    position: absolute; top: 16px; left: 20px;
+    font-size: 9rem; font-weight: 900; line-height: 1; color: rgba(255,255,255,.05);
+    pointer-events: none; user-select: none; letter-spacing: -.04em;
+  }
+  .sig-strength {
+    position: absolute; top: 18px; right: 18px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    border: 1px solid; backdrop-filter: blur(12px);
+  }
+  .str-strong { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.3); color: #fca5a5; }
+  .str-medium { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.3); color: #fcd34d; }
+  .str-weak   { background: rgba(100,116,139,.15); border-color: rgba(100,116,139,.3); color: #cbd5e1; }
+  .str-dot { width: 7px; height: 7px; border-radius: 50%; animation: pulse-ring 2s ease-in-out infinite; }
+  .str-strong .str-dot { background: #f87171; }
+  .str-medium .str-dot { background: #fbbf24; }
+  .str-weak   .str-dot { background: #94a3b8; }
+
+  .sig-bottom { position: relative; z-index: 2; padding: 24px; }
+  .sig-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .type-badge {
+    padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
+    border: 1px solid; backdrop-filter: blur(12px);
+  }
+  .type-foresight  { background: rgba(139,92,246,.18); border-color: rgba(139,92,246,.3); color: #c4b5fd; }
+  .type-technology { background: rgba(14,165,233,.18);  border-color: rgba(14,165,233,.3);  color: #7dd3fc; }
+  .type-social     { background: rgba(34,197,94,.18);   border-color: rgba(34,197,94,.3);   color: #86efac; }
+  .type-article    { background: rgba(245,158,11,.18);  border-color: rgba(245,158,11,.3);  color: #fcd34d; }
+  .sig-pos { font-size: 11px; color: rgba(255,255,255,.28); }
+
+  .sig-title { font-size: 1.2rem; font-weight: 800; line-height: 1.35; color: white; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+  .sig-divider { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+  .sig-divider-line { height: 1px; flex: 1; background: rgba(255,255,255,.1); }
+  .sig-divider-accent { height: 1px; width: 32px; }
+  .str-strong ~ * .sig-divider-accent, .accent-strong { background: #f87171; }
+
+  /* Right panel */
+  .sig-right {
+    flex: 1; background: #0a0e1a; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sig-right-head {
+    padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,.06);
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .right-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .right-dot-strong { background: #f87171; }
+  .right-dot-medium { background: #fbbf24; }
+  .right-dot-weak   { background: #94a3b8; }
+  .right-str { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
+  .right-str-strong { color: #f87171; }
+  .right-str-medium { color: #fbbf24; }
+  .right-str-weak   { color: #94a3b8; }
+  .right-sep { color: rgba(255,255,255,.12); font-size: 12px; }
+  .right-type { font-size: 11px; color: rgba(255,255,255,.28); }
+
+  .sig-scroll { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .sig-scroll::-webkit-scrollbar { width: 4px; }
+  .sig-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+
+  .card {
+    border-radius: 14px; padding: 16px; border: 1px solid;
+  }
+  .card-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+  .card-text { font-size: .8125rem; line-height: 1.65; }
+  .card-neutral { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.07); }
+  .card-neutral .card-label { color: rgba(255,255,255,.28); }
+  .card-neutral .card-text  { color: rgba(255,255,255,.72); }
+  .card-amber { background: rgba(245,158,11,.07); border-color: rgba(245,158,11,.2); }
+  .card-amber .card-label { color: #fbbf24; }
+  .card-amber .card-text  { color: rgba(253,230,138,.85); }
+  .card-blue { background: rgba(14,165,233,.07); border-color: rgba(14,165,233,.2); }
+  .card-blue .card-label { color: #38bdf8; }
+  .card-blue .card-text  { color: rgba(186,230,253,.85); }
+
+  .sources { display: flex; flex-wrap: wrap; gap: 6px; }
+  .source-chip {
+    font-size: 10.5px; padding: 4px 10px; border-radius: 999px;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    color: rgba(255,255,255,.38); cursor: default;
+  }
+  .source-chip a { color: inherit; text-decoration: none; }
+  .source-chip a:hover { color: rgba(255,255,255,.7); }
+
+  .comments-list { display: flex; flex-direction: column; gap: 8px; }
+  .comment { display: flex; gap: 10px; }
+  .avatar {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: white;
+  }
+  .comment-bubble { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); border-radius: 12px; padding: 8px 12px; flex: 1; }
+  .comment-author { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.45); margin-bottom: 3px; }
+  .comment-text   { font-size: 11.5px; color: rgba(255,255,255,.58); line-height: 1.55; }
+
+  .sig-right-foot {
+    padding: 12px 24px; border-top: 1px solid rgba(255,255,255,.06);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .sig-author { display: flex; align-items: center; gap: 8px; }
+  .sig-author-name { font-size: 11.5px; color: rgba(255,255,255,.28); }
+  .sig-meta-right { display: flex; align-items: center; gap: 16px; font-size: 11px; color: rgba(255,255,255,.22); }
+
+  /* ── Nav Bar ── */
+  #nav-bar {
+    flex-shrink: 0; height: 56px;
+    background: rgba(6,9,18,.95); border-top: 1px solid rgba(255,255,255,.07);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+    backdrop-filter: blur(12px);
+  }
+  .nav-btn {
+    display: flex; align-items: center; gap: 6px; padding: 8px 16px;
+    border-radius: 10px; border: 1px solid transparent; cursor: pointer;
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    transition: all .15s; background: transparent; color: rgba(255,255,255,.38);
+  }
+  .nav-btn:hover:not(:disabled) { color: rgba(255,255,255,.75); background: rgba(255,255,255,.06); }
+  .nav-btn:disabled { opacity: .2; cursor: default; }
+  .nav-btn-next {
+    background: rgba(14,165,233,.18); border-color: rgba(14,165,233,.22); color: #7dd3fc;
+  }
+  .nav-btn-next:hover:not(:disabled) { background: rgba(14,165,233,.28); border-color: rgba(14,165,233,.35); color: #bae6fd; }
+
+  .dots { display: flex; align-items: center; gap: 5px; }
+  .dot {
+    border-radius: 999px; height: 6px; background: rgba(255,255,255,.18);
+    border: none; cursor: pointer; padding: 0; transition: all .3s;
+  }
+  .dot:hover { background: rgba(255,255,255,.4); }
+  .dot.active { width: 24px !important; background: var(--radar); }
+  .dot:not(.active) { width: 6px; }
+
+  /* Arrow icons */
+  .ico { display: inline-block; width: 14px; height: 14px; vertical-align: middle; }
+
+  /* Gradient backgrounds by signal */
+  .grad-s9  { background: linear-gradient(135deg, #051525, #072a4a, #041020); }
+  .grad-s10 { background: linear-gradient(135deg, #051a0a, #083a14, #041008); }
+  .grad-s11 { background: linear-gradient(135deg, #0d0520, #1a0a40, #080318); }
+  .grad-s12 { background: linear-gradient(135deg, #200a02, #3a1205, #180801); }
+  .grad-s13 { background: linear-gradient(135deg, #041a06, #083a10, #031204); }
+  .grad-s14 { background: linear-gradient(135deg, #030d20, #051a40, #020a18); }
+
+  /* Scrollbar gutter */
+  .sig-scroll { scrollbar-gutter: stable; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="slide-area">
+    <div id="slide"></div>
+  </div>
+  <div id="nav-bar">
+    <button class="nav-btn" id="btn-prev" onclick="navigate(currentSlide - 1)">
+      ← Anterior
+    </button>
+    <div class="dots" id="dots"></div>
+    <button class="nav-btn nav-btn-next" id="btn-next" onclick="navigate(currentSlide + 1)">
+      Siguiente →
+    </button>
+  </div>
+</div>
+
+<script>
+const SIGNALS = [
+  {
+    id: "s9",
+    title: "Suecia abre la primera autopista con carga inalámbrica para vehículos eléctricos en movimiento",
+    img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900&q=80",
+    type: "technology",
+    strength: "strong",
+    author: "David Ruiz", initials: "DR",
+    votes: 38, commentCount: 2,
+    observation: "Suecia inaugura 20 km de autopista E20 con raíles de carga dinámica bajo el asfalto. Los vehículos compatibles cargan mientras circulan a 90 km/h. El coste por km de instalación cayó un 40% respecto al piloto de 2021. Noruega, Alemania y Corea del Sur han anunciado pilotos equivalentes.",
+    why: "Elimina la principal barrera de adopción del vehículo eléctrico: la ansiedad por autonomía. Si la infraestructura de carretera se electrifica, el concepto de 'batería grande' pierde sentido y el modelo de negocio del EV se reorganiza alrededor de la suscripción a la red, no al hardware.",
+    implication: "Si esto escala en Europa, las carteras de financiación de infraestructura deberán incorporar 'carretera como servicio' como nueva categoría de activo. Oportunidad de bono verde vinculado a kilómetros de vía electrificada. Riesgo para posiciones en fabricantes de baterías de gran capacidad.",
+    sources: ["Trafikverket — Informe eRoadArlanda 2026", "IEA — EV Infrastructure Outlook 2026", "Reuters Transport, abril 2026"],
+    comments: [
+      { initials:"MS", author:"Marta Sanz", text:"El modelo de suscripción a la vía cambia quién financia la infraestructura. Hay que rastrear cómo se estructura la concesión." },
+      { initials:"CL", author:"Carlos López", text:"Impacto directo en la valoración de activos de fabricantes de baterías en cartera. Lo paso al equipo de renta variable." },
+    ],
+  },
+  {
+    id: "s10",
+    title: "Amsterdam elimina 11.000 plazas de aparcamiento para crear espacios públicos y carriles bici",
+    img: "https://images.unsplash.com/photo-1601574968106-b312ac309953?w=900&q=80",
+    type: "social",
+    strength: "strong",
+    author: "Elena Martín", initials: "EM",
+    votes: 29, commentCount: 1,
+    observation: "Amsterdam ha eliminado 11.000 de sus 260.000 plazas de aparcamiento en superficie entre 2020 y 2026. El plan municipal prevé eliminar otras 10.000 antes de 2030. El espacio liberado se reconvierte en plazas verdes, carriles bici y terrazas. El precio del aparcamiento privado ha subido un 35% en 3 años.",
+    why: "No es un experimento: es política municipal consolidada en la ciudad más avanzada en movilidad urbana de Europa. Marca el camino que otras capitales seguirán con un desfase de 5–8 años. El coche privado en el centro urbano pasa de norma a excepción regulada.",
+    implication: "Las ciudades que repliquen este modelo generarán demanda masiva de aparcamiento subterráneo y periférico, y de soluciones de último kilómetro. Oportunidad para financiar infraestructura de aparcamiento inteligente y proyectos de reconversión urbana como activos ESG.",
+    sources: ["Gemeente Amsterdam — Plan de Movilidad 2026-2030", "European Cyclists' Federation, mayo 2026", "The Guardian — Urban Futures, abril 2026"],
+    comments: [
+      { initials:"IG", author:"Isabel Gómez", text:"Madrid y Barcelona ya tienen planes similares en borrador. El timing es clave para financiar antes de que suba el coste del suelo." },
+    ],
+  },
+  {
+    id: "s11",
+    title: "La IA predice colapsos de red de metro con 45 minutos de antelación en París",
+    img: null,
+    type: "technology",
+    strength: "medium",
+    author: "Pablo Herrera", initials: "PH",
+    votes: 21, commentCount: 1,
+    observation: "La red de metro de París implanta un sistema de IA que analiza en tiempo real datos de torniquetes, temperaturas, incidencias históricas y eventos urbanos. En pruebas durante 18 meses, predijo el 87% de los colapsos con 45 minutos de margen, permitiendo redistribuir trenes y activar rutas alternativas automáticamente.",
+    why: "Por primera vez, la gestión de infraestructura de transporte masivo pasa de reactiva a predictiva. El tiempo de respuesta ante una incidencia deja de medirse en horas y pasa a medirse en minutos. Esto cambia el estándar de fiabilidad que ciudadanos y reguladores exigirán a las redes de transporte.",
+    implication: "La adopción de IA predictiva en infraestructura pública crea un nuevo segmento de licitaciones municipales. Si el banco financia operadores de transporte, el ratio de adopción tecnológica debe entrar en los modelos de riesgo. Oportunidad de estructurar deuda verde ligada a métricas de eficiencia operativa.",
+    sources: ["RATP — Innovation Report 2026", "MIT Mobility Initiative, marzo 2026"],
+    comments: [
+      { initials:"AT", author:"Ana Torres", text:"El 87% de precisión es notable. ¿El modelo es propietario de la RATP o de un proveedor externo? Define quién captura el valor." },
+    ],
+  },
+  {
+    id: "s12",
+    title: "Singapur despliega la primera red de autobuses autónomos sin conductor operativa 24h",
+    img: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=900&q=80",
+    type: "foresight",
+    strength: "strong",
+    author: "Lucía Fernández", initials: "LF",
+    votes: 44, commentCount: 2,
+    observation: "Singapur opera 12 rutas de autobús completamente autónomas en zonas urbanas y aeropuerto sin conductor de respaldo. Tarifa plana de 0,50 SGD (~0,35 €). Accidentalidad: 0 incidentes graves en 14 meses. La demanda superó la proyección en un 60% en el primer trimestre de operación real.",
+    why: "No es un piloto: es operación comercial real sin red de seguridad humana. Singapur demuestra que la autonomía total en transporte público masivo es técnica y legalmente viable hoy. El umbral de confianza pública, el mayor obstáculo hasta ahora, ha sido superado con datos reales de uso.",
+    implication: "Si el modelo escala a Europa (horizonte 2029–2031), los operadores de transporte público deberán recapitalizarse para la transición tecnológica. Oportunidad de financiar esa transformación. Riesgo para posiciones en empresas de empleo de conductores o fabricantes de autobuses convencionales.",
+    sources: ["Land Transport Authority Singapore — AV Bus Report 2026", "Bloomberg CityLab, mayo 2026", "WEF — Future of Urban Mobility 2026"],
+    comments: [
+      { initials:"DR", author:"David Ruiz", text:"La demanda 60% por encima de proyecciones invierte el argumento de 'la gente no va a subirse'. Hay que revisar nuestros supuestos sobre adopción." },
+      { initials:"CL", author:"Carlos López", text:"Impacto laboral brutal en el horizonte 2030–2035. ¿Cómo afecta a los sindicatos de transporte en España?" },
+    ],
+  },
+  {
+    id: "s13",
+    title: "Shenzhen convierte tejados industriales en parques elevados conectados por pasarelas",
+    img: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=900&q=80",
+    type: "foresight",
+    strength: "medium",
+    author: "Marta Sanz", initials: "MS",
+    votes: 17, commentCount: 0,
+    observation: "Shenzhen ha conectado 34 tejados industriales con pasarelas peatonales y ciclistas, creando 18 km de espacio público elevado. Los 'sky parks' incluyen huertos urbanos, zonas de deporte y puntos de monitoreo medioambiental. Han reducido la temperatura de los barrios afectados entre 2 y 3 °C durante los picos de calor.",
+    why: "En ciudades donde el suelo en superficie es escaso o caro, el espacio público se crea en vertical. No es una propuesta arquitectónica: es una política de infraestructura que reclasifica los tejados como suelo público. El precedente legal y técnico está establecido y ya hay 8 ciudades asiáticas replicándolo.",
+    implication: "Si este modelo llega a ciudades europeas densas (Barcelona, París, Milán), generará un nuevo mercado de financiación de infraestructura vertical de uso público. Los fondos de impacto urbano deberán incorporar esta tipología. Atractivo como activo ESG con métricas de reducción de calor urbano medibles.",
+    sources: ["ArchDaily — Shenzhen Sky Park Network, 2026", "C40 Cities — Urban Heat Solutions Report 2026", "Nature Urban Sustainability, abril 2026"],
+    comments: [],
+  },
+  {
+    id: "s14",
+    title: "El 68% de europeos elegiría transporte público si el tiempo de espera fuera inferior a 5 minutos",
+    img: null,
+    type: "article",
+    strength: "strong",
+    author: "Ana Torres", initials: "AT",
+    votes: 35, commentCount: 2,
+    observation: "Encuesta a 18.000 ciudadanos en 12 países europeos: el 68% afirma que dejaría el coche privado si el transporte público garantizara tiempos de espera menores a 5 minutos y cobertura de último kilómetro. El umbral cae al 45% si el tiempo de espera es de 10 minutos. La brecha entre intención y comportamiento real se estrecha cuando mejora la frecuencia.",
+    why: "La barrera para abandonar el coche privado no es ideológica ni económica: es de fiabilidad y conveniencia. Este dato invierte la narrativa dominante. La demanda latente de transporte público de calidad es enorme, y la tecnología para capturarla ya existe.",
+    implication: "Las ciudades que inviertan en frecuencia de servicio y cobertura de último kilómetro capturarán esa demanda latente. Oportunidad de financiar operadores de microtransporte urbano como nueva categoría de infraestructura. El dato también refuerza la tesis de inversión en transporte público frente a infraestructura viaria.",
+    sources: ["Eurobarometer — Urban Mobility Attitudes 2026", "UITP — Public Transport Demand Survey Q1 2026", "McKinsey — Cities at a Crossroads 2026"],
+    comments: [
+      { initials:"EM", author:"Elena Martín", text:"El dato del umbral de 5 vs 10 minutos es muy accionable. Hay que pasárselo al equipo de movilidad del cliente municipal." },
+      { initials:"PH", author:"Pablo Herrera", text:"Curioso que sea tan consistente entre países. Normalmente hay mucha varianza norte-sur." },
+    ],
+  },
+];
+
+const TYPE_LABELS   = { foresight:"Foresight", technology:"Tecnología", social:"Social", article:"Artículo" };
+const STRENGTH_LBLS = { strong:"Crítica", medium:"En alza", weak:"Emergente" };
+
+let currentSlide = -1; // -1 = cover
+
+function renderCover() {
+  const strong   = SIGNALS.filter(s => s.strength === "strong").length;
+  const votes    = SIGNALS.reduce((a,s) => a + s.votes, 0);
+  const comments = SIGNALS.reduce((a,s) => a + s.commentCount, 0);
+  return `
+    <div id="cover">
+      <div class="dot-grid"></div>
+      <div id="radar-wrap">
+        <svg viewBox="0 0 400 400" width="100%" height="100%">
+          <circle cx="200" cy="200" r="180" fill="none" stroke="white" stroke-width="0.5"/>
+          <circle cx="200" cy="200" r="130" fill="none" stroke="white" stroke-width="0.5"/>
+          <circle cx="200" cy="200" r="80"  fill="none" stroke="white" stroke-width="0.5"/>
+          <circle cx="200" cy="200" r="30"  fill="none" stroke="white" stroke-width="0.5"/>
+          <line x1="20" y1="200" x2="380" y2="200" stroke="white" stroke-width="0.3"/>
+          <line x1="200" y1="20" x2="200" y2="380" stroke="white" stroke-width="0.3"/>
+          <line x1="72" y1="72" x2="328" y2="328" stroke="white" stroke-width="0.2"/>
+          <line x1="328" y1="72" x2="72" y2="328" stroke="white" stroke-width="0.2"/>
+          <g id="radar-sweep">
+            <line x1="200" y1="200" x2="200" y2="20" stroke="#0ea5e9" stroke-width="2"/>
+            <path d="M200,200 L200,20 A180,180 0 0,1 238,28 Z" fill="url(#sweepGrad)" opacity="0.5"/>
+          </g>
+          <circle cx="265" cy="140" r="3.5" fill="#0ea5e9" class="blip" style="animation-delay:0s"/>
+          <circle cx="130" cy="250" r="2.5" fill="#0ea5e9" class="blip" style="animation-delay:0.8s"/>
+          <circle cx="300" cy="220" r="2"   fill="#0ea5e9" class="blip" style="animation-delay:1.6s"/>
+          <circle cx="155" cy="120" r="2"   fill="#0ea5e9" class="blip" style="animation-delay:2.4s"/>
+          <defs>
+            <radialGradient id="sweepGrad" cx="0%" cy="0%">
+              <stop offset="0%"   stop-color="#0ea5e9" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="cover-content anim-in">
+        <div class="cover-chips">
+          <span class="chip chip-blue">🚆 Transporte</span>
+          <span class="chip chip-green">🌳 Espacios Públicos</span>
+        </div>
+        <div class="cover-title">INFRAESTRUCTURA</div>
+        <div class="cover-year">2026 <span>Señales & tendencias</span></div>
+        <p class="cover-desc">
+          Un repaso por las señales más relevantes en movilidad urbana y espacio público
+          que están redefiniendo la infraestructura de nuestras ciudades.
+        </p>
+        <div class="stats">
+          <div class="stat-card"><div class="stat-num">${SIGNALS.length}</div><div class="stat-lbl">Señales</div></div>
+          <div class="stat-card"><div class="stat-num">${strong}</div><div class="stat-lbl">Críticas</div></div>
+          <div class="stat-card"><div class="stat-num">${votes}</div><div class="stat-lbl">Votos</div></div>
+          <div class="stat-card"><div class="stat-num">${comments}</div><div class="stat-lbl">Comentarios</div></div>
+        </div>
+        <div class="cover-actions">
+          <button class="btn-primary" onclick="navigate(0)">Comenzar presentación →</button>
+          <span class="hint">← → para navegar · Esc para portada</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSignal(idx) {
+  const s = SIGNALS[idx];
+  const strClass = { strong:"str-strong", medium:"str-medium", weak:"str-weak" }[s.strength];
+  const dotClass = { strong:"right-dot-strong", medium:"right-dot-medium", weak:"right-dot-weak" }[s.strength];
+  const strTxt   = { strong:"right-str-strong", medium:"right-str-medium", weak:"right-str-weak" }[s.strength];
+  const typeClass = `type-${s.type}`;
+  const gradClass = `grad-${s.id}`;
+
+  const commentHtml = s.comments.length ? `
+    <div>
+      <p class="card-label" style="color:rgba(255,255,255,.25);margin-bottom:8px">💬 Equipo (${s.comments.length})</p>
+      <div class="comments-list">
+        ${s.comments.map(c => `
+          <div class="comment">
+            <div class="avatar">${c.initials}</div>
+            <div class="comment-bubble">
+              <div class="comment-author">${c.author}</div>
+              <div class="comment-text">${c.text}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  ` : "";
+
+  const imgHtml = s.img ? `<img class="sig-bg-img" src="${s.img}" alt="" loading="eager"/>` : "";
+
+  return `
+    <div class="sig-left ${gradClass}">
+      ${imgHtml}
+      <div class="sig-bg-overlay"></div>
+      <div class="sig-dots-bg"></div>
+      <div class="sig-glow"></div>
+      <div class="sig-num">${String(idx+1).padStart(2,"0")}</div>
+      <div class="sig-strength ${strClass}">
+        <div class="str-dot"></div>
+        ${STRENGTH_LBLS[s.strength]}
+      </div>
+      <div class="sig-bottom">
+        <div class="sig-meta">
+          <span class="type-badge ${typeClass}">${TYPE_LABELS[s.type]}</span>
+          <span class="sig-pos">señal ${idx+1} de ${SIGNALS.length}</span>
+        </div>
+        <div class="sig-title">${s.title}</div>
+        <div class="sig-divider">
+          <div class="sig-divider-line"></div>
+          <div class="sig-divider-accent" style="background:${s.strength==="strong"?"#f87171":s.strength==="medium"?"#fbbf24":"#94a3b8"}"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sig-right">
+      <div class="sig-right-head">
+        <div class="right-dot ${dotClass}"></div>
+        <span class="right-str ${strTxt}">${STRENGTH_LBLS[s.strength]}</span>
+        <span class="right-sep">·</span>
+        <span class="right-type">${TYPE_LABELS[s.type]}</span>
+      </div>
+      <div class="sig-scroll">
+        <div class="card card-neutral">
+          <div class="card-label">Observación</div>
+          <div class="card-text">${s.observation}</div>
+        </div>
+        <div class="card card-amber">
+          <div class="card-label">⚡ ¿Por qué es señal?</div>
+          <div class="card-text">${s.why}</div>
+        </div>
+        <div class="card card-blue">
+          <div class="card-label">🎯 Implicación</div>
+          <div class="card-text">${s.implication}</div>
+        </div>
+        <div>
+          <p class="card-label" style="color:rgba(255,255,255,.25);margin-bottom:8px">Fuentes</p>
+          <div class="sources">
+            ${s.sources.map(src => `<span class="source-chip">${src}</span>`).join("")}
+          </div>
+        </div>
+        ${commentHtml}
+      </div>
+      <div class="sig-right-foot">
+        <div class="sig-author">
+          <div class="avatar" style="width:22px;height:22px;font-size:8px">${s.initials}</div>
+          <span class="sig-author-name">${s.author}</span>
+        </div>
+        <div class="sig-meta-right">
+          <span>↑ ${s.votes} votos</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDots() {
+  const dots = document.getElementById("dots");
+  let html = `<button class="dot${currentSlide===-1?" active":""}" style="${currentSlide!==-1?"width:6px":""}" onclick="navigate(-1)" title="Portada"></button>`;
+  SIGNALS.forEach((_,i) => {
+    html += `<button class="dot${currentSlide===i?" active":""}" onclick="navigate(${i})" title="Señal ${i+1}"></button>`;
+  });
+  dots.innerHTML = html;
+}
+
+function renderNav() {
+  document.getElementById("btn-prev").disabled = currentSlide === -1;
+  document.getElementById("btn-next").disabled = currentSlide === SIGNALS.length - 1;
+  document.getElementById("btn-next").textContent = currentSlide === -1 ? "Comenzar →" : "Siguiente →";
+}
+
+function navigate(idx) {
+  if (idx < -1 || idx >= SIGNALS.length) return;
+  const dir = idx > currentSlide ? "right" : "left";
+  const slideEl = document.getElementById("slide");
+  slideEl.style.opacity = "0";
+  slideEl.style.transform = dir === "right" ? "translateX(16px)" : "translateX(-16px)";
+  slideEl.style.transition = "opacity .18s ease, transform .18s ease";
+
+  setTimeout(() => {
+    currentSlide = idx;
+    slideEl.innerHTML = currentSlide === -1 ? renderCover() : renderSignal(currentSlide);
+    slideEl.style.transition = "none";
+    slideEl.style.opacity = "0";
+    slideEl.style.transform = dir === "right" ? "translateX(-16px)" : "translateX(16px)";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        slideEl.style.transition = "opacity .32s ease, transform .32s cubic-bezier(.16,1,.3,1)";
+        slideEl.style.opacity = "1";
+        slideEl.style.transform = "translateX(0)";
+      });
+    });
+    renderDots();
+    renderNav();
+  }, 180);
+}
+
+// Keyboard
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === "ArrowDown")  navigate(currentSlide + 1);
+  if (e.key === "ArrowLeft"  || e.key === "ArrowUp")    navigate(currentSlide - 1);
+  if (e.key === "Escape" || e.key === "Home")            navigate(-1);
+  if (e.key === "End")                                   navigate(SIGNALS.length - 1);
+});
+
+// Init
+navigate(-1);
+</script>
+</body>
+</html>
