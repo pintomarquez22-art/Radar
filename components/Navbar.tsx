@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Radio, TrendingUp, Plus, LayoutDashboard } from "lucide-react";
+import { Radio, TrendingUp, Plus, LayoutDashboard, Train } from "lucide-react";
 
 const links = [
-  { href: "/",        label: "Feed",      Icon: LayoutDashboard },
-  { href: "/trends",  label: "Tendencias", Icon: TrendingUp },
+  { href: "/",                label: "Feed",           Icon: LayoutDashboard },
+  { href: "/trends",          label: "Tendencias",     Icon: TrendingUp },
+  { href: "/infraestructura", label: "Infraestructura", Icon: Train },
 ];
 
 export default function Navbar() {
