@@ -26,6 +26,7 @@ export interface Comment {
 export interface Signal {
   id: string;
   title: string;
+  imageUrl?: string;
   sources: Source[];
   observation: string;
   whySignal: string;

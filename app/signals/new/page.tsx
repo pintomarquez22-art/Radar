@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send, Plus, Trash2, Eye, Zap, Landmark, Link2 } from "lucide-react";
+import { ArrowLeft, Send, Plus, Trash2, Eye, Zap, Landmark, Link2, ImagePlus, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { SignalType, SignalStrength, Source } from "@/lib/types";
 import TagBadge from "@/components/TagBadge";
@@ -41,6 +41,7 @@ export default function NewSignalPage() {
 
   const [title, setTitle]           = useState("");
   const [sources, setSources]       = useState<Source[]>([{ label: "", url: "" }]);
+  const [imageUrl, setImageUrl]     = useState("");
   const [observation, setObs]       = useState("");
   const [whySignal, setWhy]         = useState("");
   const [implication, setImpl]      = useState("");
@@ -69,6 +70,7 @@ export default function NewSignalPage() {
         observation: observation.trim(),
         whySignal: whySignal.trim(),
         implication: implication.trim(),
+        imageUrl: imageUrl.trim() || undefined,
         type,
         strength,
         tags: state.tags.filter((t) => selectedTags.includes(t.id)),
@@ -95,6 +97,48 @@ export default function NewSignalPage() {
           <input value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder='Ej: "Pagos biométricos por proximidad en escuelas públicas"'
             className="input" />
+        </div>
+
+        {/* Image */}
+        <div>
+          <label className="label flex items-center gap-1.5"><ImagePlus size={14} /> Imagen (opcional)</label>
+          {imageUrl ? (
+            <div className="relative rounded-xl overflow-hidden border border-gray-200">
+              <img src={imageUrl} alt="preview" className="w-full h-40 object-cover" />
+              <button
+                onClick={() => setImageUrl("")}
+                className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <input
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="Pega una URL de imagen (https://...)"
+                className="input"
+              />
+              <div className="relative">
+                <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-400 hover:border-blue-300 hover:text-blue-500 cursor-pointer transition-colors">
+                  <ImagePlus size={16} /> O sube una foto desde tu dispositivo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => setImageUrl(ev.target?.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Type + Strength */}

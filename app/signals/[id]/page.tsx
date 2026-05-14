@@ -53,6 +53,13 @@ export default function SignalDetailPage({ params }: { params: { id: string } })
           </span>
         </div>
 
+        {/* Image */}
+        {signal.imageUrl && (
+          <div className="w-full h-64 rounded-2xl overflow-hidden mb-5">
+            <img src={signal.imageUrl} alt={signal.title} className="w-full h-full object-cover" />
+          </div>
+        )}
+
         {/* Title */}
         <h1 className="text-2xl font-bold text-gray-900 leading-tight mb-3">
           {signal.title}

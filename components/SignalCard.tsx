@@ -15,8 +15,22 @@ export default function SignalCard({ signal }: { signal: Signal }) {
   const sc = strengthConfig[signal.strength];
 
   return (
-    <article className={`group bg-white border border-gray-200 border-l-4 ${sc.cardBorder} rounded-2xl p-5 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200`}>
-      <div className="flex gap-4">
+    <article className={`group bg-white border border-gray-200 border-l-4 ${sc.cardBorder} rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 transition-all duration-200`}>
+
+      {/* Image */}
+      {signal.imageUrl && (
+        <Link href={`/signals/${signal.id}`}>
+          <div className="w-full h-44 overflow-hidden">
+            <img
+              src={signal.imageUrl}
+              alt={signal.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </Link>
+      )}
+
+      <div className="flex gap-4 p-5">
         {/* Vote */}
         <div className="flex-shrink-0 pt-1">
           <VoteButton signalId={signal.id} votes={signal.votes} voted={signal.userVoted} />
@@ -24,7 +38,7 @@ export default function SignalCard({ signal }: { signal: Signal }) {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Meta row */}
+          {/* Meta */}
           <div className="flex flex-wrap items-center gap-2 mb-2.5">
             <TypeIcon type={signal.type} showLabel />
             <StrengthBadge strength={signal.strength} />
@@ -68,7 +82,7 @@ export default function SignalCard({ signal }: { signal: Signal }) {
             <div className="flex items-center gap-3">
               <Link href={`/signals/${signal.id}`} className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-colors">
                 <MessageCircle size={13} />
-                <span>{signal.comments.length} {signal.comments.length === 0 ? "· sé el primero" : ""}</span>
+                <span>{signal.comments.length}{signal.comments.length === 0 ? " · sé el primero" : ""}</span>
               </Link>
               <span className="flex items-center gap-1 text-xs text-gray-400">
                 <Link2 size={12} />

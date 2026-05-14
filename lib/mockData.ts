@@ -19,6 +19,7 @@ export const MOCK_SIGNALS: Signal[] = [
   {
     id: "s1",
     title: "LLMs superan a médicos residentes en diagnóstico de patologías raras",
+    imageUrl: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80",
     sources: [
       { label: "Nature Medicine, 2026", url: "https://www.nature.com/nm" },
       { label: "Stanford HAI Report 2025", url: "https://hai.stanford.edu" },
@@ -111,6 +112,7 @@ export const MOCK_SIGNALS: Signal[] = [
   {
     id: "s5",
     title: "67% de los jóvenes Z europeos elegiría menos sueldo a cambio de autonomía total sobre su tiempo",
+    imageUrl: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80",
     sources: [
       { label: "Eurofound — Future of Work Survey 2026", url: "https://www.eurofound.europa.eu" },
       { label: "Deloitte Global Millennial & Gen Z Survey 2026" },
