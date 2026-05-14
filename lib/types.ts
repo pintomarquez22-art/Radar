@@ -30,6 +30,7 @@ export interface Signal {
   votes: number;
   userVoted: boolean;
   comments: Comment[];
+  bankRelevance?: string;
   authorName: string;
   authorInitials: string;
   createdAt: string;

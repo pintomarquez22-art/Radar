@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Landmark } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { SignalType, SignalStrength } from "@/lib/types";
 import TagBadge from "@/components/TagBadge";
@@ -32,6 +32,7 @@ export default function NewSignalPage() {
   const [type, setType]           = useState<SignalType>("foresight");
   const [strength, setStrength]   = useState<SignalStrength>("medium");
   const [selectedTags, setTags]   = useState<string[]>([]);
+  const [bankRelevance, setBank]  = useState("");
   const [authorName, setAuthor]   = useState("");
 
   const toggleTag = (id: string) =>
@@ -52,6 +53,7 @@ export default function NewSignalPage() {
         type,
         strength,
         tags,
+        bankRelevance: bankRelevance.trim() || undefined,
         authorName: authorName.trim(),
         authorInitials: authorName.trim().split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(),
       },
@@ -138,6 +140,21 @@ export default function NewSignalPage() {
               />
             ))}
           </div>
+        </div>
+
+        {/* Bank relevance */}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <label className="flex items-center gap-2 text-sm font-semibold text-amber-800 mb-2">
+            <Landmark size={14} className="text-amber-600" />
+            ¿Por qué es importante para el banco?
+          </label>
+          <textarea
+            rows={3}
+            value={bankRelevance}
+            onChange={(e) => setBank(e.target.value)}
+            placeholder="¿Qué implicaciones tiene esta señal para el negocio, los clientes o la estrategia del banco?"
+            className="w-full px-3 py-2 rounded-lg text-sm border border-amber-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400/40 resize-none"
+          />
         </div>
 
         {/* Author */}
