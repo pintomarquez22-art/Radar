@@ -35,6 +35,52 @@
   100% { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes radar-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes radar-glow {
+  0%, 100% { opacity: 0.08; }
+  50%       { opacity: 0.18; }
+}
+
+@keyframes count-up {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  0%   { opacity: 0; transform: translateX(24px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  0%   { opacity: 0; transform: translateX(-24px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.animate-radar-spin {
+  animation: radar-spin 5s linear infinite;
+  transform-origin: 200px 200px;
+}
+
+.animate-radar-glow {
+  animation: radar-glow 3s ease-in-out infinite;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-count-up {
+  animation: count-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
